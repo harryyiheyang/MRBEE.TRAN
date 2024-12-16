@@ -1,6 +1,6 @@
-#' Estimate Causal Effect with MRBEE
+#' Estimate Non-Transferable Causal Effect with MRBEE and SuSiE
 #'
-#' This function estimates the causal effect using a bias-correction estimating equation, considering potential pleiotropy and measurement errors.
+#' This function estimates the non-transferable causal effect using a bias-correction estimating equation, considering potential pleiotropy and measurement errors, and using SuSiE to select the non-transferable causal effect.
 #'
 #' @param by A vector (n x 1) of the GWAS effect size of outcome.
 #' @param bX A matrix (n x p) of the GWAS effect sizes of p exposures.
@@ -29,10 +29,10 @@
 #' @importFrom MRBEEX MRBEE_IMRP
 #' @export
 #'
-TR_MRBEE_IMRP=function(by,bX,byse,bXse,bz,bzse,Rxyz,L=min(10,ncol(bX)),transfer.coef=1,theta.source,susie.iter=500,pip.thres=0.2,max.iter=100,max.eps=1e-4,pv.thres=0.05,var.est="robust",FDR=T,adjust.method="Sidak",reliability.thres=0.8,ridge.diff=100){
+TR_MRBEE_IMRP=function(by,bX,byse,bXse,bz,bzse,Rxyz,L=min(10,ncol(bX)),transfer.coef=1,theta.source,susie.iter=500,pip.thres=0.2,max.iter=100,max.eps=1e-4,pv.thres=0.05,var.est="variance",FDR=T,adjust.method="Sidak",reliability.thres=0.8,ridge.diff=100){
 ######### Basic Processing  ##############
 Rxy=Rxyz[-1,-1]
-fit.no.tran=MRBEE_IMRP(by=by,bX=bX,byse=byse,bXse=bXse,Rxy=Rxy,maxdiff=2)
+fit.no.tran=MRBEE_IMRP_SuSiE(by=by,bX=bX,byse=byse,bXse=bXse,Rxy=Rxy,L=L)
 theta.naive=fit.no.tran$theta
 if(transfer.coef[1]=="adaptive"){
 fit.naive=rlm(theta.naive~theta.source-1)
@@ -111,9 +111,9 @@ error=sqrt(sum((delta-delta1)^2))
 ############################### inference #########################
 names(delta)=colnames(bZ)
 inddelta=which(delta!=0)
-r=c(by-bZ%*%delta)*byse1
-r[indvalid]=0
-names(r)=rownames(bZ)
+res=c(by-bZ%*%delta)*byse1
+res[indvalid]=0
+names(res)=rownames(bZ)
 
 adjf=n/(length(indvalid)-length(inddelta)-1)
 if(length(inddelta)>0){
@@ -134,11 +134,12 @@ covdelta=diag(delta)*0
 colnames(covdelta)=rownames(covdelta)=colnames(bZ)
 A=list()
 A$delta=delta
-A$gamma=r
+A$gamma=res
 A$delta.se=sqrt(diag(covdelta))
 A$delta.cov=covdelta
 A$reliability.adjust=r
 A$susie.delta=fit.susie
+A$estimate.transfer.coef=delta.naive
 return(A)
 
 }

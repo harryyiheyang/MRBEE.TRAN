@@ -10,7 +10,7 @@ bX=BETA[,-10]
 bXse=SE[,-10]
 by=BETA[,10]
 byse=SE[,10]
-fit_EUR=MRBEE_IMRP(by=by,bX=bX,byse=byse,bXse=bXse,Rxy=Rxy,maxdiff=2)
+fit_EUR=MRBEE_IMRP_SuSiE(by=by,bX=bX,byse=byse,bXse=bXse,Rxy=Rxy,L=10)
 
 EAS_Transfer <- readRDS("data/EAS_Transfer.rds") %>% list2env(.,envir=.GlobalEnv)
 BETA=Z/sqrt(N)
@@ -21,19 +21,19 @@ by=BETA[,11]
 byse=SE[,11]
 bz=BETA[,1]
 bzse=SE[,1]
-fit_EAS=MRBEE_IMRP(by=by,bX=bX,byse=byse,bXse=bXse,Rxy=Rxy,maxdiff=2)
+fit_EAS=MRBEE_IMRP_SuSiE(by=by,bX=bX,byse=byse,bXse=bXse,Rxy=Rxy,L=8)
 fit_EAS$theta/fit_EAS$theta.se
 
 cbind(fit_EUR$theta,fit_EAS$theta)
 plot(fit_EUR$theta,fit_EAS$theta)
 c(cor(fit_EUR$theta,fit_EAS$theta),cor(fit_EUR$theta,fit_EAS$theta,method="kendall"),cor(fit_EUR$theta,fit_EAS$theta,method="spearman"))
 
-indEUR=which(abs(fit_EUR$theta/fit_EUR$theta.se)>2)
 theta.source=fit_EUR$theta
-theta.source[-indEUR]=0
 fit_EAS_Tran=TR_MRBEE_IMRP(by,bX,byse,bXse,bz,bzse,Rxyz,L=6,theta.source=theta.source,transfer.coef=1)
 cbind(sqrt(fit_EAS_Tran$delta.se[-1]^2+fit_EUR$theta.se^2),fit_EAS$theta.se)
-Z=cbind(theta.source,fit_EAS_Tran$delta[-1]+theta.source,fit_EAS_Tran$delta[-1],fit_EAS$theta)
+Estimate=cbind(theta.source,fit_EAS_Tran$delta[-1]+theta.source*fit_EAS_Tran$estimate.transfer.coef,fit_EAS_Tran$delta[-1],fit_EAS$theta)
+SE=cbind(fit_EUR$theta.se,sqrt(fit_EAS_Tran$delta.se[-1]^2+fit_EUR$theta.se^2),fit_EAS_Tran$delta.se[-1],fit_EAS$theta.se)
+Z=Estimate/SE
 colnames(Z)=c("EUR","EAS_Tran","EAS_Diff","EAS")
 print(Z)
-fit_EAS_Tran$delta[1]
+print(Estimate)
