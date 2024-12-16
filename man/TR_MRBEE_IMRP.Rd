@@ -9,21 +9,22 @@ TR_MRBEE_IMRP(
   bX,
   byse,
   bXse,
-  theta.source,
-  Rxy,
+  bz,
+  bzse,
+  Rxyz,
   L = min(10, ncol(bX)),
+  transfer.coef = 1,
+  theta.source,
   susie.iter = 500,
-  pip.thres = 10,
-  max.iter = 30,
+  pip.thres = 0.2,
+  max.iter = 100,
   max.eps = 1e-04,
   pv.thres = 0.05,
   var.est = "robust",
   FDR = T,
   adjust.method = "Sidak",
   reliability.thres = 0.8,
-  sampling.time = 100,
-  sampling.iter = 8,
-  ridge.diff = 10
+  ridge.diff = 100
 )
 }
 \arguments{
@@ -35,17 +36,23 @@ TR_MRBEE_IMRP(
 
 \item{bXse}{A matrix (n x p) of the GWAS effect size SEs of p exposures.}
 
-\item{theta.source}{A vector (p x 1) of the causal effect estimate learning from the source data.}
+\item{bz}{A vector (n x 1) of the liner predictor of the transferred exposure's effect.}
 
-\item{Rxy}{A matrix (p+1 x p+1) of the correlation matrix of the p exposures and outcome. The last one should be the outcome.}
+\item{bzse}{A vector (n x 1) of the standard error of the liner predictor of the transferred exposure's effect.}
+
+\item{Rxyz}{A matrix (p+2 x p+2) of the correlation matrix of the p exposures and outcome. The first one should be the transferred linear predictor and last one should be the outcome.}
 
 \item{L}{A scale of the number of single effects used in SuSiE.}
+
+\item{transfer.coef}{A scale of transfer.coef of theta.source to theta.target. Defaults to 1. If \code{transfer.coef="adaptive"}, then the median regression coefficient between theta.source and theta.target.naive is used.}
+
+\item{theta.source}{A vector (p x 1) of the causal effect estimate learning from the source data.}
 
 \item{susie.iter}{A scale of the maximum number of iterations used in SuSiE.}
 
 \item{pip.thres}{A scale of PIP theshold for calibrating causality used in SuSiE.}
 
-\item{max.iter}{Maximum number of iterations for causal effect estimation. Defaults to 30.}
+\item{max.iter}{Maximum number of iterations for causal effect estimation. Defaults to 100.}
 
 \item{max.eps}{Tolerance for stopping criteria. Defaults to 1e-4.}
 
@@ -58,10 +65,6 @@ TR_MRBEE_IMRP(
 \item{adjust.method}{Method for estimating q-value. Defaults to "Sidak".}
 
 \item{reliability.thres}{A scale of threshold for the minimum value of the reliability ratio. If the original reliability ratio is less than this threshold, only part of the estimation error is removed so that the working reliability ratio equals this threshold.}
-
-\item{sampling.time}{A scale of number of replications in bootstrapping procedure.}
-
-\item{sampling.iter}{A scale of iterations per bootstrapping procedure. Default is \code{10}.}
 
 \item{ridge.diff}{A scale of parameter on the differences of causal effect estimate in one credible set. Defaults to \code{10}.}
 }

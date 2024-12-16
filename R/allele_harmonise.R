@@ -1,3 +1,4 @@
+#' @export
 allele_harmonise <- function(ref_panel, gwas_data) {
 
   # Make sure the reference panel has columns SNP, A1 and A2

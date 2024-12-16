@@ -2,10 +2,12 @@
 
 export(Joint.test)
 export(TR_MRBEE_IMRP)
-export(TR_MRBEE_IMRP_UV)
+export(allele_harmonise)
 export(errorCov)
 export(filter_align)
+export(transferred_linear_predictor)
 importFrom(MASS,rlm)
+importFrom(MRBEEX,MRBEE_IMRP)
 importFrom(data.table,setDT)
 importFrom(susieR,coef.susie)
 importFrom(susieR,susie)

@@ -102,79 +102,93 @@ return(r)
 }
 
 generate_D_matrix <- function(s, sign_vec) {
-  p <- length(s)
-  if (length(sign_vec) != p) {
-    stop("Length of sign_vec must match length of s.")
-  }
+p <- length(s)
+if (length(sign_vec) != p) {
+stop("Length of sign_vec must match length of s.")
+}
 
-  if (p == 1) {
-    D <- 0
-  } else {
-    num_pairs <- p*(p-1)/2
-    D_all <- matrix(0, nrow = num_pairs, ncol = p)
+if (p == 1) {
+D <- 0
+} else {
+num_pairs <- p*(p-1)/2
+D_all <- matrix(0, nrow = num_pairs, ncol = p)
 
-    row_idx <- 1
-    for (i in 1:(p-1)) {
-      for (j in (i+1):p) {
-        D_all[row_idx, i] <-  sign_vec[i] / s[i]
-        D_all[row_idx, j] <- -sign_vec[j] / s[j]
-        row_idx <- row_idx + 1
-      }
-    }
+row_idx <- 1
+for (i in 1:(p-1)) {
+for (j in (i+1):p) {
+D_all[row_idx, i] <-  sign_vec[i] / s[i]
+D_all[row_idx, j] <- -sign_vec[j] / s[j]
+row_idx <- row_idx + 1
+}
+}
 
-    D <- t(D_all)%*%D_all
-  }
+D <- t(D_all)%*%D_all
+}
 
-  return(D)
+return(D)
 }
 
 generate_block_matrix <- function(vars_df, s, theta) {
-  ind=which(theta==0)
-  vars_df$cs[which(vars_df$variable%in%ind)]=-1
-  concerned_vars <- vars_df[vars_df$cs != -1, ]
-  cs_values <- unique(concerned_vars$cs)
-  max_var_index <- max(vars_df$variable)
-  final_matrix <- matrix(0, nrow = max_var_index, ncol = max_var_index)
-  for (cs_val in cs_values) {
-    group_vars <- concerned_vars$variable[concerned_vars$cs == cs_val]
-    if (length(group_vars) > 1) {
-      group_s <- s[group_vars]
-      D <- generate_D_matrix(group_s,sign(theta[group_vars]))
-      final_matrix[group_vars, group_vars]=D
-    }
-  }
-  return(final_matrix)
+ind=which(theta==0)
+vars_df$cs[which(vars_df$variable%in%ind)]=-1
+concerned_vars <- vars_df[vars_df$cs != -1, ]
+cs_values <- unique(concerned_vars$cs)
+max_var_index <- max(vars_df$variable)
+final_matrix <- matrix(0, nrow = max_var_index, ncol = max_var_index)
+for (cs_val in cs_values) {
+group_vars <- concerned_vars$variable[concerned_vars$cs == cs_val]
+if (length(group_vars) > 1) {
+group_s <- s[group_vars]
+D <- generate_D_matrix(group_s,sign(theta[group_vars]))
+final_matrix[group_vars, group_vars]=D
+}
+}
+return(final_matrix)
 }
 
 group.pip.filter=function(pip.summary,xQTL.cred.thres=0.95,xQTL.pip.thres=0.1){
-  ind=which(pip.summary$cs>0)
-  if(length(ind)>0){
-    J=max(pip.summary$cs[ind])
-    pip.summary$cs.pip=pip.summary$variable_prob
-    for(i in 1:J){
-      indi=which(pip.summary$cs==i)
-      summaryi=pip.summary[indi,]
-      pip.cred=sum(summaryi$variable_prob)
-      pip.summary$cs.pip[indi]=pip.cred
-    }
-    ind.keep=which(pip.summary$cs.pip>=xQTL.cred.thres&pip.summary$variable_prob>=xQTL.pip.thres)
-    cs=pip.summary$cs
-    cs.pip=pip.summary$cs.pip
-    cs->cs[pip.summary$variable]
-    cs.pip->cs.pip[pip.summary$variable]
-    cs[which(cs==-1)]=0
-  }else{
-    ind.keep=NULL
-    cs=pip.summary$cs.pip*0
-    cs.pip=pip.summary$cs.pip*0
-  }
-  return(list(ind.keep=pip.summary$variable[ind.keep],cs=cs,cs.pip=cs.pip,result=pip.summary))
+ind=which(pip.summary$cs>0)
+if(length(ind)>0){
+J=max(pip.summary$cs[ind])
+pip.summary$cs.pip=pip.summary$variable_prob
+for(i in 1:J){
+indi=which(pip.summary$cs==i)
+summaryi=pip.summary[indi,]
+pip.cred=sum(summaryi$variable_prob)
+pip.summary$cs.pip[indi]=pip.cred
+}
+ind.keep=which(pip.summary$cs.pip>=xQTL.cred.thres&pip.summary$variable_prob>=xQTL.pip.thres)
+cs=pip.summary$cs
+cs.pip=pip.summary$cs.pip
+cs->cs[pip.summary$variable]
+cs.pip->cs.pip[pip.summary$variable]
+cs[which(cs==-1)]=0
+}else{
+ind.keep=NULL
+cs=pip.summary$cs.pip*0
+cs.pip=pip.summary$cs.pip*0
+}
+return(list(ind.keep=pip.summary$variable[ind.keep],cs=cs,cs.pip=cs.pip,result=pip.summary))
 }
 
 colSD=function(A){
-  a=A[1,]
-  for(i in 1:ncol(A)){
-    a[i]=sd(A[,i])
-  }
-  return(a)
+a=A[1,]
+for(i in 1:ncol(A)){
+a[i]=sd(A[,i])
+}
+return(a)
+}
+
+sloepse=function(theta.source,theta.source.cov,bX,by,bXse,byse,Rxy){
+n=length(byse)
+p=ncol(bXse)
+bzse=byse
+Rxx=Rxy[1:p,1:p]
+for(i in 1:n){
+bxi=as.vector(bX[i,])
+bxsei=as.vector(bXse[i,])
+Covi=t(t(Rxx)*bxsei)*bxsei
+bzse[i]=sum(theta.source*(Covi%*%theta.source))+sum(bxi*(theta.source.cov%*%bxi))
+}
+return(bzse)
 }
