@@ -9,9 +9,7 @@ TR_MRBEE_IMRP(
   bX,
   byse,
   bXse,
-  bz,
-  bzse,
-  Rxyz,
+  Rxy,
   L = min(10, ncol(bX)),
   transfer.coef = 1,
   theta.source,
@@ -36,11 +34,7 @@ TR_MRBEE_IMRP(
 
 \item{bXse}{A matrix (n x p) of the GWAS effect size SEs of p exposures.}
 
-\item{bz}{A vector (n x 1) of the liner predictor of the transferred exposure's effect.}
-
-\item{bzse}{A vector (n x 1) of the standard error of the liner predictor of the transferred exposure's effect.}
-
-\item{Rxyz}{A matrix (p+2 x p+2) of the correlation matrix of the p exposures and outcome. The first one should be the transferred linear predictor and last one should be the outcome.}
+\item{Rxy}{A matrix (p+1 x p+1) of the correlation matrix of the p exposures and outcome. The first one should be the transferred linear predictor and last one should be the outcome.}
 
 \item{L}{A scale of the number of single effects used in SuSiE.}
 

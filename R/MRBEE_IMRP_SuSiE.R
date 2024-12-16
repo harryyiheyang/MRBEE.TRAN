@@ -8,8 +8,6 @@
 #' @param bXse A matrix (n x p) of the GWAS effect size SEs of p exposures.
 #' @param bX A vector (n x 1) of the liner predictor of the transferred exposure's effect.
 #' @param bXse A vector (n x 1) of the standard error of the liner predictor of the transferred exposure's effect.
-#' @param transfer.coef A scale of transfer.coef of theta.source to theta.target. Defaults to 1. If \code{transfer.coef="adaptive"}, then the median regression coefficient between theta.source and theta.target.naive is used.
-#' @param theta.source A vector (p x 1) of the causal effect estimate learning from the source data.
 #' @param Rxy A matrix (p+1 x p+1) of the correlation matrix of the p exposures and outcome. The first one should be the transferred linear predictor and last one should be the outcome.
 #' @param L A scale of the number of single effects used in SuSiE.
 #' @param susie.iter A scale of the maximum number of iterations used in SuSiE.

@@ -1,4 +1,3 @@
-#' @export
 transferred_linear_predictor=function(by,byse,bX,bXse,theta.source,theta.source.cov,Rxy){
 BETA=cbind(bX,by)
 SE=cbind(bXse,byse)

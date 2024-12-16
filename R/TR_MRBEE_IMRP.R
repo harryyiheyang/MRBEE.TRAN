@@ -6,11 +6,9 @@
 #' @param bX A matrix (n x p) of the GWAS effect sizes of p exposures.
 #' @param byse A vector (n x 1) of the GWAS effect size SE of outcome.
 #' @param bXse A matrix (n x p) of the GWAS effect size SEs of p exposures.
-#' @param bz A vector (n x 1) of the liner predictor of the transferred exposure's effect.
-#' @param bzse A vector (n x 1) of the standard error of the liner predictor of the transferred exposure's effect.
 #' @param transfer.coef A scale of transfer.coef of theta.source to theta.target. Defaults to 1. If \code{transfer.coef="adaptive"}, then the median regression coefficient between theta.source and theta.target.naive is used.
 #' @param theta.source A vector (p x 1) of the causal effect estimate learning from the source data.
-#' @param Rxyz A matrix (p+2 x p+2) of the correlation matrix of the p exposures and outcome. The first one should be the transferred linear predictor and last one should be the outcome.
+#' @param Rxy A matrix (p+1 x p+1) of the correlation matrix of the p exposures and outcome. The first one should be the transferred linear predictor and last one should be the outcome.
 #' @param L A scale of the number of single effects used in SuSiE.
 #' @param susie.iter A scale of the maximum number of iterations used in SuSiE.
 #' @param pip.thres A scale of PIP theshold for calibrating causality used in SuSiE.
@@ -29,42 +27,41 @@
 #' @importFrom MRBEEX MRBEE_IMRP
 #' @export
 #'
-TR_MRBEE_IMRP=function(by,bX,byse,bXse,bz,bzse,Rxyz,L=min(10,ncol(bX)),transfer.coef=1,theta.source,susie.iter=500,pip.thres=0.2,max.iter=100,max.eps=1e-4,pv.thres=0.05,var.est="variance",FDR=T,adjust.method="Sidak",reliability.thres=0.8,ridge.diff=100){
+TR_MRBEE_IMRP=function(by,bX,byse,bXse,Rxy,L=min(10,ncol(bX)),transfer.coef=1,theta.source,susie.iter=500,pip.thres=0.2,max.iter=100,max.eps=1e-4,pv.thres=0.05,var.est="variance",FDR=T,adjust.method="Sidak",reliability.thres=0.8,ridge.diff=100){
 ######### Basic Processing  ##############
-Rxy=Rxyz[-1,-1]
-fit.no.tran=MRBEE_IMRP_SuSiE(by=by,bX=bX,byse=byse,bXse=bXse,Rxy=Rxy,L=L)
+fit.no.tran=MRBEE_IMRP(by=by,bX=bX,byse=byse,bXse=bXse,Rxy=Rxy)
+# we don't consider sparse estimate because it may cause singular design in rlm(.)
 theta.naive=fit.no.tran$theta
 if(transfer.coef[1]=="adaptive"){
 fit.naive=rlm(theta.naive~theta.source-1)
 delta.naive=coef(fit.naive)
-}else{
+pv=pchisq((delta.naive-1)^2/summary(fit.naive)[[4]][2]^2,1,lower.tail=F)
+if(pv>0.05){
 delta.naive=1
+}
+}else{
+delta.naive=transfer.coef
 }
 by=by/byse
 byseinv=1/byse
 bX=bX*byseinv
 bXse=bXse*byseinv
 byse1=byse
-bz=bz/byse
-bzse=bzse/byse
 byse=byse/byse
 n=length(by)
 p=ncol(bX)
-bZ=cbind(bz,bX)
-bZse=cbind(bzse,bXse)
-colnames(bZ)[1]=colnames(bZse)[1]="Transfer Coefficient"
-r=reliability.adj(bZ,bZse,thres=reliability.thres)
+r=reliability.adj(bX,bXse,thres=reliability.thres)
 r=c(r,1)
-Rxyz=t(t(Rxyz)*r)*r
-RxyzList=IVweight(byse,bZse,Rxyz)
-Rxyzall=biasterm(RxyList=RxyzList,c(1:n))
+Rxy=t(t(Rxy)*r)*r
+RxyList=IVweight(byse,bXse,Rxy)
+Rxyall=biasterm(RxyList=RxyList,c(1:n))
 ########## Initial Estimation ############
-br=by-bz*delta.naive
-fit=susie(y=br,X=bZ,L=5)
+br=as.vector(by-bX%*%theta.source*delta.naive)
+fit=susie(y=br,X=bX,L=5)
 delta.ini=coef.susie(fit)[-1]*(fit$pip>0.3)
 delta=delta.ini
 delta1=10000
-e=c(by-bZ%*%delta)
+e=c(br-bX%*%delta)
 indvalid=which(abs(e)<=3*stats::mad(e))
 indvalid=validadj(abs(e),indvalid,0.5) ## making the fraction of valid IVs must be larger than 50%
 ########## Iteration ###################
@@ -74,56 +71,59 @@ fit.susie=NULL
 delta=delta.ini
 while(error>max.eps&iter<max.iter){
 delta1=delta
-e=c(by-bZ%*%delta)
-pv=imrpdetect(x=e,theta=delta,RxyList=RxyzList,var.est=var.est,FDR=FDR,adjust.method=adjust.method,indvalid=indvalid)
+e=c(br-bX%*%delta)
+pv=imrpdetect(x=e,theta=delta,RxyList=RxyList,var.est=var.est,FDR=FDR,adjust.method=adjust.method,indvalid=indvalid)
 indvalid=which(pv>pv.thres)
 if (length(indvalid) < length(pv) * 0.5) {
 indvalid.cut = which(pv > stats::quantile(pv, 0.5))
 indvalid = union(indvalid, indvalid.cut)
 }
 if(length(indvalid)==n){
-Rxyzsum=Rxyzall
+Rxysum=Rxyall
 }else{
-Rxyzsum=Rxyzall-biasterm(RxyList=RxyzList,setdiff(1:n,indvalid))
+Rxysum=Rxyall-biasterm(RxyList=RxyList,setdiff(1:n,indvalid))
 }
-ZtZ=t(bZ[indvalid,])%*%bZ[indvalid,]
-Zty=c(t(bZ[indvalid,])%*%br[indvalid])
-yty=sum((br[indvalid])^2)
-fit.susie=susie_suff_stat(XtX=ZtZ,Xty=Zty,yty=yty,L=L,n=length(indvalid),estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F)
-delta=coef.susie(fit.susie)[-1]*(fit.susie$pip>=pip.thres)
-inddelta=which(delta!=0)
-Diff=generate_block_matrix(summary(fit.susie)$vars,length(indvalid)/diag(ZtZ),delta)
+theta.complement=center.classifying(delta,theta.source*delta.naive)
+br.complement=c(br-bX%*%theta.complement)
+XtX=t(bX[indvalid,])%*%bX[indvalid,]
+Xty=c(t(bX[indvalid,])%*%br.complement[indvalid])
+yty=sum((br.complement[indvalid])^2)
+fit.susie=susie_suff_stat(XtX=XtX,Xty=Xty,yty=yty,L=L,n=length(indvalid),estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F)
+delta.latent=coef.susie(fit.susie)[-1]*(fit.susie$pip>=pip.thres)
+inddelta=which(delta.latent!=0)
+Diff=generate_block_matrix(summary(fit.susie)$vars,length(indvalid)/diag(XtX),delta.latent)
 if(length(inddelta)==1){
-xtx=ZtZ[inddelta,inddelta]-Rxyzsum[inddelta,inddelta]
-xty=Zty[inddelta]-Rxyzsum[inddelta,p+2]
-delta[inddelta]=xty/xtx
+xtx=XtX[inddelta,inddelta]-Rxysum[inddelta,inddelta]
+xty=Xty[inddelta]-Rxysum[inddelta,p+1]
+delta.latent[inddelta]=xty/xtx
 }
 if(length(inddelta)>1){
-xtx=ZtZ[inddelta,inddelta]-Rxyzsum[inddelta,inddelta]+ridge.diff*Diff[inddelta,inddelta]
-xty=Zty[inddelta]-Rxyzsum[inddelta,p+2]
-delta[inddelta]=c(solve(xtx)%*%xty)
+xtx=XtX[inddelta,inddelta]-Rxysum[inddelta,inddelta]+ridge.diff*Diff[inddelta,inddelta]
+xty=Xty[inddelta]-Rxysum[inddelta,p+1]
+delta.latent[inddelta]=c(solve(xtx)%*%xty)
 }
+delta=delta.latent+theta.complement
 iter=iter+1
 if(iter>5){
 error=sqrt(sum((delta-delta1)^2))
 }
 }
 ############################### inference #########################
-names(delta)=colnames(bZ)
-inddelta=which(delta!=0)
-res=c(by-bZ%*%delta)*byse1
+names(delta)=colnames(bX)
+inddelta=which(delta.latent!=0)
+res=c(br-bX%*%delta)*byse1
 res[indvalid]=0
-names(res)=rownames(bZ)
+names(res)=rownames(bX)
 
 adjf=n/(length(indvalid)-length(inddelta)-1)
 if(length(inddelta)>0){
 Hinv=solve(xtx)
-D=bZ[indvalid,inddelta]%*%(Hinv%*%t(bZ[indvalid,inddelta]))
+D=bX[indvalid,inddelta]%*%(Hinv%*%t(bX[indvalid,inddelta]))
 D=(rep(1,length(indvalid))-diag(D))
 D[which(D<0.25)]=0.25
-E=-bZ[indvalid,inddelta]*(e[indvalid]/D)
+E=-bX[indvalid,inddelta]*(e[indvalid]/D)
 for(i in 1:length(indvalid)){
-E[i,]=E[i,]+RxyzList[indvalid[i],p+2,inddelta]-c(RxyzList[indvalid[i],inddelta,inddelta]%*%delta[inddelta])
+E[i,]=E[i,]+RxyList[indvalid[i],p+1,inddelta]-c(RxyList[indvalid[i],inddelta,inddelta]%*%delta[inddelta])
 }
 V=t(E)%*%E
 covdelta=diag(delta)*0
@@ -131,7 +131,7 @@ covdelta[inddelta,inddelta]=(Hinv%*%V%*%Hinv)*adjf
 }else{
 covdelta=diag(delta)*0
 }
-colnames(covdelta)=rownames(covdelta)=colnames(bZ)
+colnames(covdelta)=rownames(covdelta)=colnames(bX)
 A=list()
 A$delta=delta
 A$gamma=res
@@ -140,6 +140,7 @@ A$delta.cov=covdelta
 A$reliability.adjust=r
 A$susie.delta=fit.susie
 A$estimate.transfer.coef=delta.naive
+A$delta.latent=delta.latent
 return(A)
 
 }

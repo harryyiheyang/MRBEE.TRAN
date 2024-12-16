@@ -192,3 +192,13 @@ bzse[i]=sum(theta.source*(Covi%*%theta.source))+sum(bxi*(theta.source.cov%*%bxi)
 }
 return(bzse)
 }
+
+center.classifying=function(delta,theta.source){
+p=length(delta)
+complement=delta*0
+for(i in 1:p){
+s=which.min(c(abs(delta[i]),abs(delta[i]+theta.source[i])))
+complement[i]=ifelse(s==1,0,-theta.source[i])
+}
+return(complement)
+}

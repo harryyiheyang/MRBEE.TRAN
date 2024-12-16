@@ -55,10 +55,6 @@ MRBEE_IMRP_SuSiE(
 \item{reliability.thres}{A scale of threshold for the minimum value of the reliability ratio. If the original reliability ratio is less than this threshold, only part of the estimation error is removed so that the working reliability ratio equals this threshold.}
 
 \item{ridge.diff}{A scale of parameter on the differences of causal effect estimate in one credible set. Defaults to \code{10}.}
-
-\item{transfer.coef}{A scale of transfer.coef of theta.source to theta.target. Defaults to 1. If \code{transfer.coef="adaptive"}, then the median regression coefficient between theta.source and theta.target.naive is used.}
-
-\item{theta.source}{A vector (p x 1) of the causal effect estimate learning from the source data.}
 }
 \value{
 A list containing the estimated causal effect, its covariance, and pleiotropy.

@@ -29,10 +29,13 @@ plot(fit_EUR$theta,fit_EAS$theta)
 c(cor(fit_EUR$theta,fit_EAS$theta),cor(fit_EUR$theta,fit_EAS$theta,method="kendall"),cor(fit_EUR$theta,fit_EAS$theta,method="spearman"))
 
 theta.source=fit_EUR$theta
-fit_EAS_Tran=TR_MRBEE_IMRP(by,bX,byse,bXse,bz,bzse,Rxyz,L=6,theta.source=theta.source,transfer.coef=1)
-cbind(sqrt(fit_EAS_Tran$delta.se[-1]^2+fit_EUR$theta.se^2),fit_EAS$theta.se)
-Estimate=cbind(theta.source,fit_EAS_Tran$delta[-1]+theta.source*fit_EAS_Tran$estimate.transfer.coef,fit_EAS_Tran$delta[-1],fit_EAS$theta)
-SE=cbind(fit_EUR$theta.se,sqrt(fit_EAS_Tran$delta.se[-1]^2+fit_EUR$theta.se^2),fit_EAS_Tran$delta.se[-1],fit_EAS$theta.se)
+susie.iter=500;pip.thres=0.2;max.iter=100;max.eps=1e-4;pv.thres=0.05;var.est="variance";FDR=T;adjust.method="Sidak";reliability.thres=0.8;ridge.diff=100
+L=8;transfer.coef=1
+Rxy=Rxyz[-1,-1]
+fit_EAS_Tran=TR_MRBEE_IMRP(by,bX,byse,bXse,Rxy,L=8,theta.source=theta.source,transfer.coef=1)
+cbind(sqrt(fit_EAS_Tran$delta.se^2+fit_EUR$theta.se^2),fit_EAS$theta.se)
+Estimate=cbind(theta.source,fit_EAS_Tran$delta+theta.source*fit_EAS_Tran$estimate.transfer.coef,fit_EAS_Tran$delta,fit_EAS$theta)
+SE=cbind(fit_EUR$theta.se,sqrt(fit_EAS_Tran$delta.se^2+fit_EUR$theta.se^2),fit_EAS_Tran$delta.se,fit_EAS$theta.se)
 Z=Estimate/SE
 colnames(Z)=c("EUR","EAS_Tran","EAS_Diff","EAS")
 print(Z)
