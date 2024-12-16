@@ -22,8 +22,7 @@
 #' @param sampling.iter A scale of iterations per bootstrapping procedure. Default is \code{10}.
 #' @param ridge.diff A scale of parameter on the differences of causal effect estimate in one credible set. Defaults to \code{10}.
 #' @return A list containing the estimated causal effect, its covariance, and pleiotropy.
-#' @importFrom MASS rlm
-#' @importFrom susieR susie_suff_stat coef.susie
+#' @importFrom susieR susie_suff_stat coef.susie susie
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #' @export
 #'
@@ -46,8 +45,9 @@ Rxyall=biasterm(RxyList=RxyList,c(1:n))
 eta0=bX%*%theta.source
 bZ=cbind(eta0,bX)
 colnames(bZ)[1]="Source Effect"
-fit=rlm(by~bZ-1)
-theta.ini=fit$coefficient
+br=by-eta0
+fit=susie(y=br,X=bX,L=5)
+theta.ini=c(1,coef.susie(fit)[-1])
 theta=theta.ini
 theta1=10000
 e=c(by-bZ%*%theta)
