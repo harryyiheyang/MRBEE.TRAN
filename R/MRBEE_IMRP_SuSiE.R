@@ -70,6 +70,7 @@ Rxysum=Rxyall
 Rxysum=Rxyall-biasterm(RxyList=RxyList,setdiff(1:n,indvalid))
 }
 XtX=t(bX[indvalid,])%*%bX[indvalid,]
+XtX=t(XtX)/2+XtX/2
 Xty=c(t(bX[indvalid,])%*%by[indvalid])
 yty=sum((by[indvalid])^2)
 fit.susie=susie_suff_stat(XtX=XtX,Xty=Xty,yty=yty,L=L,n=length(indvalid),estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F)
