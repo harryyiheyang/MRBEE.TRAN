@@ -37,7 +37,6 @@ byse1=byse
 byse=byse/byse
 n=length(by)
 p=ncol(bX)
-colnames(bX)[1]=colnames(bXse)[1]="Transfer Coefficient"
 r=reliability.adj(bX,bXse,thres=reliability.thres)
 r=c(r,1)
 Rxy=t(t(Rxy)*r)*r
