@@ -15,9 +15,11 @@ Imports:
     data.table,
     FDRestimation,
     susieR,
-    MRBEEX
+    MRBEEX,
+    CppMatrix
 RoxygenNote: 7.3.1
 Remotes:
     harryyiheyang/MRBEEX,
+    harryyiheyang/CppMatrix,
     stephenslab/susieR
 ORCID: 0000-0001-6563-3579    

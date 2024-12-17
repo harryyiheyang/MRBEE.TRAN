@@ -22,7 +22,7 @@
 #' @param ridge.diff A scale of parameter on the differences of causal effect estimate in one credible set. Defaults to \code{10}.
 #' @return A list containing the estimated causal effect, its covariance, and pleiotropy.
 #' @importFrom susieR susie_suff_stat coef.susie susie
-#' @importFrom utils setTxtProgressBar txtProgressBar
+#' @importFrom CppMatrix matrixMultiply matrixVectorMultiply matrixListProduct
 #' @importFrom MASS rlm
 #' @importFrom MRBEEX MRBEE_IMRP
 #' @export
@@ -57,7 +57,7 @@ fit.susie=NULL
 theta=theta.ini
 while(error>max.eps&iter<max.iter){
 theta1=theta
-e=c(by-bX%*%theta)
+e=by-matrixVectorMultiply(bX,theta)
 pv=imrpdetect(x=e,theta=theta,RxyList=RxyList,var.est=var.est,FDR=FDR,adjust.method=adjust.method,indvalid=indvalid)
 indvalid=which(pv>pv.thres)
 if (length(indvalid) < length(pv) * 0.5) {
@@ -69,9 +69,9 @@ Rxysum=Rxyall
 }else{
 Rxysum=Rxyall-biasterm(RxyList=RxyList,setdiff(1:n,indvalid))
 }
-XtX=t(bX[indvalid,])%*%bX[indvalid,]
+XtX=matrixMultiply(t(bX[indvalid,]),bX[indvalid,])
 XtX=t(XtX)/2+XtX/2
-Xty=c(t(bX[indvalid,])%*%by[indvalid])
+Xty=matrixVectorMultiply(t(bX[indvalid,]),by[indvalid])
 yty=sum((by[indvalid])^2)
 fit.susie=susie_suff_stat(XtX=XtX,Xty=Xty,yty=yty,L=L,n=length(indvalid),estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F)
 theta=coef.susie(fit.susie)[-1]*(fit.susie$pip>=pip.thres)
@@ -95,14 +95,14 @@ error=sqrt(sum((theta-theta1)^2))
 ############################### inference #########################
 names(theta)=colnames(bX)
 indtheta=which(theta!=0)
-res=c(by-bX%*%theta)*byse1
+res=by-matrixVectorMultiply(bX,theta)*byse1
 res[indvalid]=0
 names(res)=rownames(bX)
 
 adjf=n/(length(indvalid)-length(indtheta)-1)
 if(length(indtheta)>0){
 Hinv=solve(xtx)
-D=bX[indvalid,indtheta]%*%(Hinv%*%t(bX[indvalid,indtheta]))
+D=matrixListProduct(list(bX[indvalid,indtheta],Hinv,t(bX[indvalid,indtheta])))
 D=(rep(1,length(indvalid))-diag(D))
 D[which(D<0.25)]=0.25
 E=-bX[indvalid,indtheta]*(e[indvalid]/D)

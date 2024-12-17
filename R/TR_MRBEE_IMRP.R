@@ -22,7 +22,7 @@
 #' @param ridge.diff A scale of parameter on the differences of causal effect estimate in one credible set. Defaults to \code{10}.
 #' @return A list containing the estimated causal effect, its covariance, and pleiotropy.
 #' @importFrom susieR susie_suff_stat coef.susie susie
-#' @importFrom utils setTxtProgressBar txtProgressBar
+#' @importFrom CppMatrix matrixMultiply matrixVectorMultiply matrixListProduct
 #' @importFrom MASS rlm
 #' @importFrom MRBEEX MRBEE_IMRP
 #' @export
@@ -61,7 +61,7 @@ fit=susie(y=br,X=bX,L=5)
 delta.ini=coef.susie(fit)[-1]*(fit$pip>0.3)
 delta=delta.ini
 delta1=10000
-e=c(br-bX%*%delta)
+e=br-matrixVectorMultiply(bX,delta)
 indvalid=which(abs(e)<=3*stats::mad(e))
 indvalid=validadj(abs(e),indvalid,0.5) ## making the fraction of valid IVs must be larger than 50%
 ########## Iteration ###################
@@ -71,7 +71,7 @@ fit.susie=NULL
 delta=delta.ini
 while(error>max.eps&iter<max.iter){
 delta1=delta
-e=c(br-bX%*%delta)
+e=br-matrixVectorMultiply(bX,delta)
 pv=imrpdetect(x=e,theta=delta,RxyList=RxyList,var.est=var.est,FDR=FDR,adjust.method=adjust.method,indvalid=indvalid)
 indvalid=which(pv>pv.thres)
 if (length(indvalid) < length(pv) * 0.5) {
@@ -85,9 +85,9 @@ Rxysum=Rxyall-biasterm(RxyList=RxyList,setdiff(1:n,indvalid))
 }
 theta.complement=center.classifying(delta,theta.source*delta.naive)
 br.complement=c(br-bX%*%theta.complement)
-XtX=t(bX[indvalid,])%*%bX[indvalid,]
+XtX=matrixMultiply(t(bX[indvalid,]),bX[indvalid,])
 XtX=t(XtX)/2+XtX/2
-Xty=c(t(bX[indvalid,])%*%br.complement[indvalid])
+Xty=matrixVectorMultiply(t(bX[indvalid,]),br.complement[indvalid])
 yty=sum((br.complement[indvalid])^2)
 fit.susie=susie_suff_stat(XtX=XtX,Xty=Xty,yty=yty,L=L,n=length(indvalid),estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F)
 delta.latent=coef.susie(fit.susie)[-1]*(fit.susie$pip>=pip.thres)
@@ -112,14 +112,14 @@ error=sqrt(sum((delta-delta1)^2))
 ############################### inference #########################
 names(delta)=colnames(bX)
 inddelta=which(delta.latent!=0)
-res=c(br-bX%*%delta)*byse1
+res=(br-matrixVectorMultiply(bX,delta))*byse1
 res[indvalid]=0
 names(res)=rownames(bX)
 
 adjf=n/(length(indvalid)-length(inddelta)-1)
 if(length(inddelta)>0){
 Hinv=solve(xtx)
-D=bX[indvalid,inddelta]%*%(Hinv%*%t(bX[indvalid,inddelta]))
+D=matrixListProduct(list(bX[indvalid,inddelta],Hinv,t(bX[indvalid,inddelta])))
 D=(rep(1,length(indvalid))-diag(D))
 D[which(D<0.25)]=0.25
 E=-bX[indvalid,inddelta]*(e[indvalid]/D)
