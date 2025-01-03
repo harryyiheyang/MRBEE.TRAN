@@ -1,0 +1,25 @@
+Package: MRTL
+Type: Package
+Title: Tran-Ancestry Mendelian Randomization using Transfer Learning
+Version: 0.1.1
+Author: Yihe Yang
+Maintainer: Yihe Yang <yxy1234@case.edu>
+Description: This package performs tran-ancestry multivariate Mendelian randomization. The central idea is using transfer learning to gain power from Eourpean population. It is characterized by the removal of measurement error bias caused by the estimation error of GWAS effect size estimates using an unbiased estimating function in measurement error analysis. It also utilizes the minimum concave penalty (MCP) to dynamically detect and remove potential pleiotropy, making the causal effect robust to pleiotropy.
+License: MIT LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 4.4.0),
+Imports:
+    MASS,
+    data.table,
+    FDRestimation,
+    susieR,
+    MRBEEX,
+    CppMatrix
+RoxygenNote: 7.3.2
+Remotes:
+    harryyiheyang/MRBEEX,
+    harryyiheyang/CppMatrix,
+    stephenslab/susieR
+ORCID: 0000-0001-6563-3579    

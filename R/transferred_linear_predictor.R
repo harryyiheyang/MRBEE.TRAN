@@ -1,0 +1,24 @@
+transferred_linear_predictor=function(by,byse,bX,bXse,theta.source,theta.source.cov,Rxy){
+BETA=cbind(bX,by)
+SE=cbind(bXse,byse)
+p=ncol(bX)
+n=nrow(bX)
+Eta=as.vector(BETA[,1:p]%*%theta.source)
+EtaSE=Eta
+Rxx=Rxy[1:p]
+for(i in 1:length(Eta)){
+  bxsei=SE[i,1:p]
+  bxi=BETA[i,1:p]
+  bxi[abs(bxi)>10]=0
+  Rxxi=t(t(Rxx)*bxsei)*bxsei
+  EtaSE[i]=sum(theta.source*(Rxxi%*%theta.source))+sum(bxi*(theta.source.cov%*%bxi))
+}
+EtaSE=sqrt(EtaSE)
+BETA=cbind(Eta,BETA)
+SE=cbind(EtaSE,SE)
+ZMatrix=BETA/SE
+colnames(ZMatrix)[1]="Transfer"
+Rxyz=MRBEE::errorCov(ZMatrix)
+colnames(Rxyz)=rownames(Rxyz)=colnames(ZMatrix)
+return(list(bz=Eta,bzse=EtaSE,Rxyz=Rxyz))
+}
