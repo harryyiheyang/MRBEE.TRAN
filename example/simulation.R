@@ -51,10 +51,16 @@ Rxy_eas=A_eas$Rxy
 
 fit_eur_mrbee=MRBEE_IPOD_SuSiE(by=by_eur,bX=bX_eur,byse=byse_eur,bXse=bXse_eur,Rxy=Rxy_eur)
 fit_eur_mrcml=MRcML_IPOD_SuSiE(by=by_eur,bX=bX_eur,byse=byse_eur,bXse=bXse_eur,Rxy=Rxy_eur,L=fit_eur_mrbee$L.optimal+1,tau=fit_eur_mrbee$tau.optimal,theta.ini=fit_eur_mrbee$theta)
+
 t1=Sys.time()
-fit_imrp=MRBEE_IMRP(by=by_eas,bX=bX_eas,byse=byse_eas,bXse=bXse_eas,Rxy=Rxy_eas)
+fit_mrbee=MRBEE_IMRP(by=by_eas,bX=bX_eas,byse=byse_eas,bXse=bXse_eas,Rxy=Rxy_eas)
 t2=Sys.time()
 imrp.time=difftime(t2, t1, units = "secs")
+
+t1=Sys.time()
+fit_mrcml=MRcML_IPOD(by=by_eas,bX=bX_eas,byse=byse_eas,bXse=bXse_eas,Rxy=Rxy_eas,tau=7.5,theta.ini=fit_imrp$theta)
+t2=Sys.time()
+mrcml.time=difftime(t2, t1, units = "secs")
 
 t1=Sys.time()
 fit_mrbee_susie=MRBEE_IPOD_SuSiE(by=by_eas,bX=bX_eas,byse=byse_eas,bXse=bXse_eas,Rxy=Rxy_eas)
@@ -88,11 +94,13 @@ fit_tran_mrcml=MRcML_TL(by=by_eas,bX=bX_eas,byse=byse_eas,bXse=bXse_eas,Rxy=Rxy_
 t2=Sys.time()
 mrcml.tran.time=difftime(t2, t1, units = "secs")
 
-Estimate=cbind(fit_tran_mrbee$theta,fit_tran_mrcml$theta,fit_mrbee_susie$theta,fit_mrcml_susie$theta,fit_imrp$theta,fit_median@Estimate,fit_lasso@Estimate)
-SE=cbind(fit_tran_mrbee$theta.se,fit_tran_mrcml$theta.se,fit_mrbee_susie$theta.se,fit_mrcml_susie$theta.se,fit_imrp$theta.se,fit_median@StdError,fit_lasso@StdError)
+Estimate=cbind(fit_tran_mrbee$theta,fit_tran_mrcml$theta,fit_mrbee_susie$theta,fit_mrcml_susie$theta,fit_imrp$theta,fit_mrcml$theta,fit_median@Estimate,fit_lasso@Estimate)
+SE=cbind(fit_tran_mrbee$theta.se,fit_tran_mrcml$theta.se,fit_mrbee_susie$theta.se,fit_mrcml_susie$theta.se,fit_mrcml$theta.se,fit_imrp$theta.se,fit_median@StdError,fit_lasso@StdError)
+time=c(mrbee.tran.time,mrcml.tran.time,mrbee.susie.time,mrcml.susie.time,imrp.time,mrcml.time,median.time,lasso.time)
 print(apply(Estimate-theta_eas,2,norm,"2"))
 Estimate
 SE
+time
 #by=by_eas;bX=bX_eas;byse=byse_eas;bXse=bXse_eas;Rxy=Rxy_eas;Lvec=c(1:3);theta.source=fit_eur$theta;theta.source.cov=fit_eur$theta.cov
 #susie.iter=500;pip.thres=0.2;max.iter=100;max.eps=1e-4;pv.thres=0.05;var.est="variance";FDR=T;adjust.method="Sidak";reliability.thres=0.8;ridge.diff=100
 #Lvec=c(1:8);transfer.coef=1;ebic.theta=ebic.gamma=1;tauvec=seq(5,50,5);admm.rho=5;ebic.delta=2

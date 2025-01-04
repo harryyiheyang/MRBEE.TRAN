@@ -28,7 +28,6 @@
 #' @return A list containing the estimated causal effect, its covariance, and pleiotropy.
 #' @importFrom susieR susie_suff_stat coef.susie susie
 #' @importFrom CppMatrix matrixMultiply matrixVectorMultiply matrixListProduct matrixInverse
-#' @importFrom MASS rlm
 #' @importFrom utils setTxtProgressBar txtProgressBar
 #' @export
 #'
