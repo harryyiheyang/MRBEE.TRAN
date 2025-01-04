@@ -80,7 +80,11 @@ delta.cluster=fit.cluster$cluster
 br.complement=c(by-bXest%*%(theta.source+delta.complement)-gamma)
 Xty=matrixVectorMultiply(t(bXest),br.complement*varomega)+g2
 yty=sum(br.complement^2*varomega)
-fit.susie=susie_suff_stat(XtX=XtX,Xty=Xty,yty=yty,L=L,n=n,estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F)
+tryCatch({
+fit.susie=susie_suff_stat(XtX=XtX,Xty=Xty,yty=yty,L=L,n=n,estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F,residual_variance_lowerbound=1)
+},error = function(e) {
+fit.susie=susie_suff_stat(XtX=XtX,Xty=Xty,yty=yty,L=L,n=n,estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F,estimate_residual_variance=F)
+})
 delta.latent=coef.susie(fit.susie)[-1]*(fit.susie$pip>=pip.thres)
 inddelta=which(delta.latent!=0)
 Diff=generate_block_matrix(summary(fit.susie)$vars,n/diag(XtX),delta.latent)

@@ -72,7 +72,11 @@ g2=g2+matrixVectorMultiply(s3,s2)
 }
 Xty=matrixVectorMultiply(t(bXest),(by-gamma)*varomega)+g2
 yty=sum((by-gamma)^2*varomega)
-fit.susie=susie_suff_stat(XtX=XtX,Xty=Xty,yty=yty,L=L,n=n,estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F)
+tryCatch({
+fit.susie=susie_suff_stat(XtX=XtX,Xty=Xty,yty=yty,L=L,n=n,estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F,residual_variance_lowerbound=1)
+},error = function(e) {
+fit.susie=susie_suff_stat(XtX=XtX,Xty=Xty,yty=yty,L=L,n=n,estimate_prior_method="EM",residual_variance=1,s_init=fit.susie,standardize=F,max_iter=susie.iter,intercept=F,estimate_residual_variance=F)
+})
 theta=coef.susie(fit.susie)[-1]*(fit.susie$pip>=pip.thres)
 indtheta=which(theta!=0)
 Diff=generate_block_matrix(summary(fit.susie)$vars,n/diag(XtX),theta)
